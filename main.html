@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Advent Calendar Game</title>
+    <style>
+    	* { padding: 0; margin: 0; }
+    	canvas { background: #eee; display: block; margin: 0 auto; }
+    </style>
+</head>
+<body>
+
+<canvas id="myCanvas" width="480" height="320"></canvas>
+
+<script>
+	var canvas = document.getElementById("myCanvas");
+    var ctx = canvas.getContext("2d");
+
+    var x = canvas.width/2;
+    var y = canvas.height-30;
+    const speed = 2;
+    var dx = 2;
+    var dy = -2;
+    const ballRadius = 10;
+    const boxLength = 10;
+    const boxPadding = 6*ballRadius;
+    const collisionLengthBallBox = ballRadius + boxLength/2;
+    let rightPressed = false;
+    let leftPressed = false;
+    let upPressed = false;
+    let downPressed = false;
+    let boxPositions = {};  // {1: [x, y]}
+
+    function spaceIsOccupied(rec_x, rec_y) {
+        let occupied = false;
+        for (var key of Object.keys(boxPositions)) {
+            if (
+                (Math.abs(boxPositions[key][0] - rec_x) < boxPadding)
+                &&
+                (Math.abs(boxPositions[key][1] - rec_y) < boxPadding)
+            ) {
+                occupied = true;
+                break;
+            }
+        }
+        return occupied;
+    }
+
+    function drawBox(i) {
+        if (i in boxPositions) {
+            rec_x = boxPositions[i][0]
+            rec_y = boxPositions[i][1]
+        } else {
+            checkSpaceAgain = true;
+
+            while(checkSpaceAgain) {
+                rec_x = Math.random() * canvas.width;
+                rec_y = Math.random() * canvas.height;
+                checkSpaceAgain = spaceIsOccupied(rec_x, rec_y);
+            }
+            boxPositions[i] = [rec_x, rec_y];
+        }
+
+        ctx.rect(rec_x, rec_y, boxLength, boxLength);
+        ctx.fillStyle = "#FF0000";
+        ctx.fill();
+    }
+
+    function drawAdventBoxes() {
+        ctx.beginPath();
+        for (i=0; i<24; i++) {
+            drawBox(i);
+        }
+        ctx.closePath();
+    };
+    drawAdventBoxes();
+
+    document.addEventListener("keydown", keyDownHandler, false);
+    document.addEventListener("keyup", keyUpHandler, false);
+
+    function keyDownHandler(e) {
+        if(e.key == "Right" || e.key == "ArrowRight") {
+            rightPressed = true;
+        }
+        else if(e.key == "Left" || e.key == "ArrowLeft") {
+            leftPressed = true;
+        }
+        else if(e.key == "Up" || e.key == "ArrowUp") {
+            upPressed = true;
+        }
+        else if(e.key == "Down" || e.key == "ArrowDown") {
+            downPressed = true;
+        }
+    }
+
+    function keyUpHandler(e) {
+        if(e.key == "Right" || e.key == "ArrowRight") {
+            rightPressed = false;
+        }
+        else if(e.key == "Left" || e.key == "ArrowLeft") {
+            leftPressed = false;
+        }
+        else if(e.key == "Up" || e.key == "ArrowUp") {
+            upPressed = false;
+        }
+        else if(e.key == "Down" || e.key == "ArrowDown") {
+            downPressed = false;
+        }
+    }
+
+    function drawBall() {
+        ctx.beginPath();
+        ctx.arc(x, y, ballRadius, 0, Math.PI*2);
+        ctx.fillStyle = "#FF0000";
+        ctx.strokeStyle = "rgba(0, 0, 255, 1)";
+        ctx.stroke();
+        // ctx.fill();
+        ctx.closePath();
+    }  
+
+    function ballControls() {
+        if(rightPressed) {
+            dx = speed;
+            if (!upPressed && !downPressed) {
+                dy = 0;
+            }
+        }
+        else if(leftPressed) {
+            dx = -speed;
+            if (!upPressed && !downPressed) {
+                dy = 0;
+            }
+        }
+        
+        if(upPressed) {
+            dy = -speed
+            if (!rightPressed && !leftPressed) {
+                dx = 0;
+            }
+        }
+        else if(downPressed) {
+            dy = speed;
+            if (!rightPressed && !leftPressed) {
+                dx = 0;
+            }
+        }
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawAdventBoxes();
+
+        ballControls();
+
+        if(x + dx > canvas.width-ballRadius || x + dx < ballRadius) {
+            dx = -dx;
+        }
+        if(y + dy > canvas.height-ballRadius || y + dy < ballRadius) {
+            dy = -dy;
+        }
+        drawBall();
+        x += dx;
+        y += dy;
+    }
+    setInterval(draw, 10);
+    
+</script>
+
+</body>
+</html>

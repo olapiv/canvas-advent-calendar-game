@@ -19,12 +19,23 @@ const closedBoxesColor = "rgb(255,0,0)";
 const openedBoxesColor = "rgb(0,0,255)";
 let boxes = {};  // {1: [x, y, status <0: not opened, 1: opened>]}
 let gameRunning = false;
+let firstGameStarted = false;
+let drawingInterval
 
 document.addEventListener("keydown", keyDownHandler, false);
 document.addEventListener("keyup", keyUpHandler, false);
 
+let restartButton = document.getElementById("restartButton");
+restartButton.onclick = function(){startOrRestart()};
+
 function spaceIsOccupied(rec_x, rec_y) {
-    let occupied = false;
+    if (
+        rec_x < boxLength/2 || rec_x > canvas.width - boxLength/2
+        ||
+        rec_y < boxLength/2 || rec_y > canvas.height - boxLength/2
+    ) {
+        return true;
+    }
     for (var key of Object.keys(boxes)) {
         if (
             (
@@ -32,16 +43,11 @@ function spaceIsOccupied(rec_x, rec_y) {
             &&
             (Math.abs(boxes[key][1] - rec_y) < boxPadding)
             )
-            ||
-            rec_x < boxLength/2 || rec_x > canvas.width - boxLength/2
-            ||
-            rec_y < boxLength/2 || rec_y > canvas.height - boxLength/2
         ) {
-            occupied = true;
-            break;
+            return true;
         }
     }
-    return occupied;
+    return false;
 }
 
 function drawBox(i) {
@@ -51,7 +57,6 @@ function drawBox(i) {
     } else {
         // Box is new:
         checkSpaceAgain = true;
-
         while(checkSpaceAgain) {
             rec_x = Math.random() * canvas.width;
             rec_y = Math.random() * canvas.height;
@@ -61,6 +66,9 @@ function drawBox(i) {
     }
     let boxColor = (boxes[i][2] == 0) ? closedBoxesColor : openedBoxesColor;
 
+    // ctx.arc takes the top left corner.
+    rec_x = rec_x - boxLength/2;
+    rec_y = rec_y - boxLength/2;
     ctx.rect(rec_x, rec_y, boxLength, boxLength);
     ctx.fillStyle = boxColor;
     ctx.fill();
@@ -142,7 +150,6 @@ function ballControls() {
 function updateGameStatus() {
     let lastOpenBox = 0;
     for (var key of Object.keys(boxes)) {
-        let orderIsIncorrect = false;
         let thisBoxIsOpen = boxes[key][2];
         if (thisBoxIsOpen && (key - lastOpenBox) > 1) {
             gameRunning = false;
@@ -155,10 +162,12 @@ function updateGameStatus() {
 
 function boxBallCollisionDetector() {
     for (var key of Object.keys(boxes)) {
+        let x_axis_colliding = (Math.abs(boxes[key][0] - x) < collisionLengthBallBox);
+        let y_axis_colliding = (Math.abs(boxes[key][1] - y) < collisionLengthBallBox);
         if (
-            (Math.abs(boxes[key][0] - x) < collisionLengthBallBox)
+            x_axis_colliding
             &&
-            (Math.abs(boxes[key][1] - y) < collisionLengthBallBox)
+            y_axis_colliding
         ) {
             boxes[key][2] = 1;
             break;
@@ -194,6 +203,10 @@ function draw() {
     updateGameStatus();
     if (!gameRunning) {
         clearInterval(drawingInterval);
+
+        // So collision is shown:
+        drawAdventBoxes();
+        drawBall();
         return
     }
 
@@ -203,18 +216,16 @@ function draw() {
     y += dy;
 }
 
-function start() {
-    if (gameRunning) {
-        return
+function startOrRestart() {
+    if (firstGameStarted) {
+        boxes = {};
     }
-    boxes = {};
-    let drawingInterval = setInterval(draw, 10);
+    firstGameStarted = true;
+    drawingInterval = setInterval(draw, 10);
     gameRunning = true;
+    restartButton.innerHTML = "Restart";
 }
 
 drawAdventBoxes();
 drawBall();
-
-restartButton = document.getElementById("restartButton");
-restartButton.onclick = function(){start()};
 

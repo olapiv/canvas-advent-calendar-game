@@ -1,12 +1,11 @@
 
-var canvas = document.getElementById("myCanvas");
-var ctx = canvas.getContext("2d");
-
-var x = canvas.width/2;
-var y = canvas.height-30;
+let canvas = document.getElementById("myCanvas");
+let ctx = canvas.getContext("2d");
+let x = canvas.width/2;
+let y = canvas.height-30;
 const speed = 2;
-var dx = 2;
-var dy = -2;
+let dx = 2;
+let dy = -2;
 const ballRadius = 10;
 const boxLength = 35;
 const boxPadding = 6*ballRadius;
@@ -36,7 +35,7 @@ function spaceIsOccupied(rec_x, rec_y) {
     ) {
         return true;
     }
-    for (var key of Object.keys(boxes)) {
+    for (let key of Object.keys(boxes)) {
         if (
             (
             (Math.abs(boxes[key][0] - rec_x) < boxPadding)
@@ -149,7 +148,7 @@ function ballControls() {
 
 function updateGameStatus() {
     let lastOpenBox = 0;
-    for (var key of Object.keys(boxes)) {
+    for (let key of Object.keys(boxes)) {
         let thisBoxIsOpen = boxes[key][2];
         if (thisBoxIsOpen && (key - lastOpenBox) > 1) {
             gameRunning = false;
@@ -161,7 +160,7 @@ function updateGameStatus() {
 }
 
 function boxBallCollisionDetector() {
-    for (var key of Object.keys(boxes)) {
+    for (let key of Object.keys(boxes)) {
         let x_axis_colliding = (Math.abs(boxes[key][0] - x) < collisionLengthBallBox);
         let y_axis_colliding = (Math.abs(boxes[key][1] - y) < collisionLengthBallBox);
         if (

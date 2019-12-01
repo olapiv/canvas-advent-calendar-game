@@ -1,11 +1,12 @@
-
 let canvas = document.getElementById("myCanvas");
 let ctx = canvas.getContext("2d");
 let x = canvas.width/2;
 let y = canvas.height-30;
-const speed = 2;
-let dx = 2;
-let dy = -2;
+const speed = 0.2;
+const intervalLength = 30;
+const dxy = speed*intervalLength;
+let dx = dxy;
+let dy = -dxy;
 const ballRadius = 10;
 const boxLength = 35;
 const boxPadding = 6*ballRadius;
@@ -120,26 +121,26 @@ function keyUpHandler(e) {
 
 function ballControls() {
     if(rightPressed) {
-        dx = speed;
+        dx = dxy;
         if (!upPressed && !downPressed) {
             dy = 0;
         }
     }
     else if(leftPressed) {
-        dx = -speed;
+        dx = -dxy;
         if (!upPressed && !downPressed) {
             dy = 0;
         }
     }
     
     if(upPressed) {
-        dy = -speed
+        dy = -dxy
         if (!rightPressed && !leftPressed) {
             dx = 0;
         }
     }
     else if(downPressed) {
-        dy = speed;
+        dy = dxy;
         if (!rightPressed && !leftPressed) {
             dx = 0;
         }
@@ -220,7 +221,7 @@ function startOrRestart() {
         boxes = {};
     }
     firstGameStarted = true;
-    drawingInterval = setInterval(draw, 10);
+    drawingInterval = setInterval(draw, intervalLength);
     gameRunning = true;
     restartButton.innerHTML = "Restart";
 }

@@ -10,7 +10,9 @@
 </head>
 <body>
 
-<canvas id="myCanvas" width="480" height="320"></canvas>
+<canvas id="myCanvas" width="700" height="700"></canvas>
+
+<button id="restartButton">Restart</button>
 
 <script>
 	var canvas = document.getElementById("myCanvas");
@@ -22,22 +24,34 @@
     var dx = 2;
     var dy = -2;
     const ballRadius = 10;
-    const boxLength = 10;
+    const boxLength = 35;
     const boxPadding = 6*ballRadius;
     const collisionLengthBallBox = ballRadius + boxLength/2;
     let rightPressed = false;
     let leftPressed = false;
     let upPressed = false;
     let downPressed = false;
-    let boxPositions = {};  // {1: [x, y]}
+    const closedBoxesColor = "rgb(255,0,0)";
+    const openedBoxesColor = "rgb(0,0,255)";
+    let boxes = {};  // {1: [x, y, status <0: not opened, 1: opened>]}
+    let gameRunning = false;
+
+    document.addEventListener("keydown", keyDownHandler, false);
+    document.addEventListener("keyup", keyUpHandler, false);
 
     function spaceIsOccupied(rec_x, rec_y) {
         let occupied = false;
-        for (var key of Object.keys(boxPositions)) {
+        for (var key of Object.keys(boxes)) {
             if (
-                (Math.abs(boxPositions[key][0] - rec_x) < boxPadding)
+                (
+                (Math.abs(boxes[key][0] - rec_x) < boxPadding)
                 &&
-                (Math.abs(boxPositions[key][1] - rec_y) < boxPadding)
+                (Math.abs(boxes[key][1] - rec_y) < boxPadding)
+                )
+                ||
+                rec_x < boxLength/2 || rec_x > canvas.width - boxLength/2
+                ||
+                rec_y < boxLength/2 || rec_y > canvas.height - boxLength/2
             ) {
                 occupied = true;
                 break;
@@ -47,10 +61,11 @@
     }
 
     function drawBox(i) {
-        if (i in boxPositions) {
-            rec_x = boxPositions[i][0]
-            rec_y = boxPositions[i][1]
+        if (i in boxes) {
+            rec_x = boxes[i][0]
+            rec_y = boxes[i][1]
         } else {
+            // Box is new:
             checkSpaceAgain = true;
 
             while(checkSpaceAgain) {
@@ -58,25 +73,29 @@
                 rec_y = Math.random() * canvas.height;
                 checkSpaceAgain = spaceIsOccupied(rec_x, rec_y);
             }
-            boxPositions[i] = [rec_x, rec_y];
+            boxes[i] = [rec_x, rec_y, 0];
         }
+        let boxColor = (boxes[i][2] == 0) ? closedBoxesColor : openedBoxesColor;
 
         ctx.rect(rec_x, rec_y, boxLength, boxLength);
-        ctx.fillStyle = "#FF0000";
+        ctx.fillStyle = boxColor;
         ctx.fill();
+
+        ctx.fillStyle = "rgb(0,0,0)";
+        ctx.textAlign="center"; 
+        ctx.textBaseline = "middle";
+        ctx.fillText((i+1).toString(),rec_x+(boxLength/2),rec_y+(boxLength/2));
     }
 
     function drawAdventBoxes() {
-        ctx.beginPath();
+        
         for (i=0; i<24; i++) {
+            ctx.beginPath();
             drawBox(i);
+            ctx.closePath();
         }
-        ctx.closePath();
+        
     };
-    drawAdventBoxes();
-
-    document.addEventListener("keydown", keyDownHandler, false);
-    document.addEventListener("keyup", keyUpHandler, false);
 
     function keyDownHandler(e) {
         if(e.key == "Right" || e.key == "ArrowRight") {
@@ -106,17 +125,7 @@
         else if(e.key == "Down" || e.key == "ArrowDown") {
             downPressed = false;
         }
-    }
-
-    function drawBall() {
-        ctx.beginPath();
-        ctx.arc(x, y, ballRadius, 0, Math.PI*2);
-        ctx.fillStyle = "#FF0000";
-        ctx.strokeStyle = "rgba(0, 0, 255, 1)";
-        ctx.stroke();
-        // ctx.fill();
-        ctx.closePath();
-    }  
+    } 
 
     function ballControls() {
         if(rightPressed) {
@@ -146,24 +155,85 @@
         }
     }
 
-    function draw() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        drawAdventBoxes();
+    function updateGameStatus() {
+        let lastOpenBox = 0;
+        for (var key of Object.keys(boxes)) {
+            let orderIsIncorrect = false;
+            let thisBoxIsOpen = boxes[key][2];
+            if (thisBoxIsOpen && (key - lastOpenBox) > 1) {
+                gameRunning = false;
+                return;
+            }
+            lastOpenBox = thisBoxIsOpen ? key : lastOpenBox;
+        }
+        gameRunning = true;
+    }
 
-        ballControls();
+    function boxBallCollisionDetector() {
+        for (var key of Object.keys(boxes)) {
+            if (
+                (Math.abs(boxes[key][0] - x) < collisionLengthBallBox)
+                &&
+                (Math.abs(boxes[key][1] - y) < collisionLengthBallBox)
+            ) {
+                boxes[key][2] = 1;
+                break;
+            }
+        }
+    }
 
+    function ballEdgeCollisionDetector() {
         if(x + dx > canvas.width-ballRadius || x + dx < ballRadius) {
             dx = -dx;
         }
         if(y + dy > canvas.height-ballRadius || y + dy < ballRadius) {
             dy = -dy;
         }
+    }
+
+    function drawBall() {
+        ctx.beginPath();
+        ctx.arc(x, y, ballRadius, 0, Math.PI*2);
+        ctx.fillStyle = "#FF0000";
+        ctx.strokeStyle = "rgba(0, 0, 255, 1)";
+        ctx.stroke();
+        // ctx.fill();
+        ctx.closePath();
+    } 
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawAdventBoxes();
         drawBall();
+
+        boxBallCollisionDetector();
+        updateGameStatus();
+        if (!gameRunning) {
+            clearInterval(drawingInterval);
+            return
+        }
+
+        ballControls();
+        ballEdgeCollisionDetector();
         x += dx;
         y += dy;
     }
-    setInterval(draw, 10);
-    
+
+    function start() {
+        if (gameRunning) {
+            return
+        }
+        boxes = {};
+        let drawingInterval = setInterval(draw, 10);
+        gameRunning = true;
+    }
+
+    drawAdventBoxes();
+    drawBall();
+
+    restartButton = document.getElementById("restartButton");
+    restartButton.onclick = function(){start()};
+
 </script>
 
 </body>

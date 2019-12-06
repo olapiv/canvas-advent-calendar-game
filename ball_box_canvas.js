@@ -21,6 +21,7 @@ let boxes = {};  // {1: [x, y, status <0: not opened, 1: opened>]}
 let gameRunning = false;
 let firstGameStarted = false;
 let drawingInterval
+let balls_collected = 0;
 
 document.addEventListener("keydown", keyDownHandler, false);
 document.addEventListener("keyup", keyUpHandler, false);
@@ -169,10 +170,12 @@ function boxBallCollisionDetector() {
             &&
             y_axis_colliding
         ) {
+			balls_collected++;
             boxes[key][2] = 1;
             break;
         }
     }
+	if(balls_collected == 24) won();
 }
 
 function ballEdgeCollisionDetector() {
@@ -216,7 +219,22 @@ function draw() {
     y += dy;
 }
 
+function won() {
+	rec_x = x;
+    rec_y = y;
+    ctx.rect(rec_x*2, rec_y, 100, 100);
+    ctx.fillStyle = openedBoxesColor;
+    ctx.fill();
+
+    ctx.fillStyle = "rgb(0,0,0)";
+    ctx.textAlign="center"; 
+    ctx.textBaseline = "middle";
+    ctx.fillText("You have won!", rec_x, rec_y);
+	window.open('https://github.com/sonderangebot10');
+}
+
 function startOrRestart() {
+	balls_collected = 0;
     if (firstGameStarted) {
         boxes = {};
     }
